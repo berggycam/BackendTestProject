@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hostel Management API Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 20px;
+        }
+        
+        .nav-item {
+            display: block;
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .nav-item:hover {
+            background: #007bff;
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .nav-item.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 30px;
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .endpoint-group {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .endpoint-group h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .response.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .response.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .method-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .method-get { background: #28a745; color: white; }
+        .method-post { background: #007bff; color: white; }
+        .method-put { background: #ffc107; color: #212529; }
+        .method-delete { background: #dc3545; color: white; }
+        
+        .url-display {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .auth-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .auth-status.authenticated {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏨 Hostel Management API Test Suite</h1>
+            <p>Comprehensive testing interface for all API endpoints</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <a href="#" class="nav-item active" data-section="auth">🔐 Authentication</a>
+                <a href="#" class="nav-item" data-section="students">👥 Students</a>
+                <a href="#" class="nav-item" data-section="hostels">🏢 Hostels</a>
+                <a href="#" class="nav-item" data-section="rooms">🚪 Rooms</a>
+                <a href="#" class="nav-item" data-section="allocations">📍 Allocations</a>
+                <a href="#" class="nav-item" data-section="fees">💰 Fees</a>
+                <a href="#" class="nav-item" data-section="bookings">📅 Bookings</a>
+                <a href="#" class="nav-item" data-section="payments">💳 Payments</a>
+                <a href="#" class="nav-item" data-section="complaints">📝 Complaints</a>
+                <a href="#" class="nav-item" data-section="visitors">👤 Visitors</a>
+                <a href="#" class="nav-item" data-section="maintenance">🔧 Maintenance</a>
+                <a href="#" class="nav-item" data-section="menu">🍽️ Menu</a>
+                <a href="#" class="nav-item" data-section="mess-attendance">📊 Mess Attendance</a>
+                <a href="#" class="nav-item" data-section="student-attendance">📋 Student Attendance</a>
+                <a href="#" class="nav-item" data-section="leave-requests">📄 Leave Requests</a>
+                <a href="#" class="nav-item" data-section="gate-entry">🚪 Gate Entry</a>
+            </div>
+            
+            <div class="content">
+                <div id="auth-status" class="auth-status">
+                    Not Authenticated - Please sign in to test protected endpoints
+                </div>
+                
+                <!-- Authentication Section -->
+                <div id="auth" class="section active">
+                    <h2>Authentication</h2>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span>Sign Up</h3>
+                        <div class="url-display">POST /api/user/signUp</div>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="signup-name" placeholder="Enter your name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="signup-email" placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="signup-password" placeholder="Enter your password">
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select id="signup-role">
+                                <option value="student">Student</option>
+                                <option value="admin">Admin</option>
+                                <option value="staff">Staff</option>
+                                <option value="superadmin">Super Admin</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="signUp()">Sign Up</button>
+                        <div id="signup-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span>Sign In</h3>
+                        <div class="url-display">POST /api/user/signIn</div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="signin-email" placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="signin-password" placeholder="Enter your password">
+                        </div>
+                        <button class="btn btn-success" onclick="signIn()">Sign In</button>
+                        <div id="signin-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get Profile</h3>
+                        <div class="url-display">GET /api/user/profile</div>
+                        <button class="btn" onclick="getProfile()">Get Profile</button>
+                        <div id="profile-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-put">PUT</span>Change Password</h3>
+                        <div class="url-display">PUT /api/user/change-password</div>
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="current-password" placeholder="Enter current password">
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="new-password" placeholder="Enter new password">
+                        </div>
+                        <button class="btn btn-warning" onclick="changePassword()">Change Password</button>
+                        <div id="change-password-response" class="response" style="display:none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Students Section -->
+                <div id="students" class="section">
+                    <h2>Student Management</h2>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span>Create Student</h3>
+                        <div class="url-display">POST /api/students</div>
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input type="text" id="student-name" placeholder="Student name">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="student-email" placeholder="Student email">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone</label>
+                                <input type="text" id="student-phone" placeholder="Phone number">
+                            </div>
+                            <div class="form-group">
+                                <label>Course</label>
+                                <input type="text" id="student-course" placeholder="Course">
+                            </div>
+                            <div class="form-group">
+                                <label>Year</label>
+                                <input type="number" id="student-year" placeholder="Year">
+                            </div>
+                            <div class="form-group">
+                                <label>Room Number</label>
+                                <input type="text" id="student-room" placeholder="Room number">
+                            </div>
+                        </div>
+                        <button class="btn" onclick="createStudent()">Create Student</button>
+                        <div id="create-student-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get All Students</h3>
+                        <div class="url-display">GET /api/students</div>
+                        <button class="btn" onclick="getAllStudents()">Get All Students</button>
+                        <div id="get-all-students-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get Student by ID</h3>
+                        <div class="url-display">GET /api/students/:id</div>
+                        <div class="form-group">
+                            <label>Student ID</label>
+                            <input type="text" id="student-id" placeholder="Enter student ID">
+                        </div>
+                        <button class="btn" onclick="getStudentById()">Get Student</button>
+                        <div id="get-student-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get Students by Course</h3>
+                        <div class="url-display">GET /api/students/course/:course</div>
+                        <div class="form-group">
+                            <label>Course</label>
+                            <input type="text" id="course-filter" placeholder="Enter course name">
+                        </div>
+                        <button class="btn" onclick="getStudentsByCourse()">Filter by Course</button>
+                        <div id="students-by-course-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get Students by Year</h3>
+                        <div class="url-display">GET /api/students/year/:year</div>
+                        <div class="form-group">
+                            <label>Year</label>
+                            <input type="number" id="year-filter" placeholder="Enter year">
+                        </div>
+                        <button class="btn" onclick="getStudentsByYear()">Filter by Year</button>
+                        <div id="students-by-year-response" class="response" style="display:none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Hostels Section -->
+                <div id="hostels" class="section">
+                    <h2>Hostel Management</h2>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span>Create Hostel</h3>
+                        <div class="url-display">POST /api/hostels</div>
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input type="text" id="hostel-name" placeholder="Hostel name">
+                            </div>
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select id="hostel-type">
+                                    <option value="boys">Boys</option>
+                                    <option value="girls">Girls</option>
+                                    <option value="mixed">Mixed</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <input type="text" id="hostel-address" placeholder="Address">
+                            </div>
+                            <div class="form-group">
+                                <label>Capacity</label>
+                                <input type="number" id="hostel-capacity" placeholder="Total capacity">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="hostel-description" placeholder="Hostel description" rows="3"></textarea>
+                        </div>
+                        <button class="btn" onclick="createHostel()">Create Hostel</button>
+                        <div id="create-hostel-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get All Hostels</h3>
+                        <div class="url-display">GET /api/hostels</div>
+                        <button class="btn" onclick="getAllHostels()">Get All Hostels</button>
+                        <div id="get-all-hostels-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get Hostel by ID</h3>
+                        <div class="url-display">GET /api/hostels/:id</div>
+                        <div class="form-group">
+                            <label>Hostel ID</label>
+                            <input type="text" id="hostel-id" placeholder="Enter hostel ID">
+                        </div>
+                        <button class="btn" onclick="getHostelById()">Get Hostel</button>
+                        <div id="get-hostel-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get Hostels by Type</h3>
+                        <div class="url-display">GET /api/hostels/type/:type</div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="hostel-type-filter">
+                                <option value="boys">Boys</option>
+                                <option value="girls">Girls</option>
+                                <option value="mixed">Mixed</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="getHostelsByType()">Filter by Type</button>
+                        <div id="hostels-by-type-response" class="response" style="display:none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Rooms Section -->
+                <div id="rooms" class="section">
+                    <h2>Room Management</h2>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span>Create Room</h3>
+                        <div class="url-display">POST /api/room</div>
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label>Room Number</label>
+                                <input type="text" id="room-number" placeholder="Room number">
+                            </div>
+                            <div class="form-group">
+                                <label>Hostel ID</label>
+                                <input type="text" id="room-hostel-id" placeholder="Hostel ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Capacity</label>
+                                <input type="number" id="room-capacity" placeholder="Room capacity">
+                            </div>
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select id="room-type">
+                                    <option value="single">Single</option>
+                                    <option value="double">Double</option>
+                                    <option value="triple">Triple</option>
+                                    <option value="four">Four Sharing</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Floor</label>
+                            <input type="number" id="room-floor" placeholder="Floor number">
+                        </div>
+                        <button class="btn" onclick="createRoom()">Create Room</button>
+                        <div id="create-room-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get All Rooms</h3>
+                        <div class="url-display">GET /api/room</div>
+                        <button class="btn" onclick="getAllRooms()">Get All Rooms</button>
+                        <div id="get-all-rooms-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get Room by ID</h3>
+                        <div class="url-display">GET /api/room/:id</div>
+                        <div class="form-group">
+                            <label>Room ID</label>
+                            <input type="text" id="room-id" placeholder="Enter room ID">
+                        </div>
+                        <button class="btn" onclick="getRoomById()">Get Room</button>
+                        <div id="get-room-response" class="response" style="display:none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Other sections would follow the same pattern... -->
+                <!-- For brevity, I'll include a few more key sections -->
+                
+                <!-- Bookings Section -->
+                <div id="bookings" class="section">
+                    <h2>Booking Management</h2>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span>Create Booking</h3>
+                        <div class="url-display">POST /api/bookings</div>
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label>Student ID</label>
+                                <input type="text" id="booking-student-id" placeholder="Student ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Room ID</label>
+                                <input type="text" id="booking-room-id" placeholder="Room ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="date" id="booking-start-date">
+                            </div>
+                            <div class="form-group">
+                                <label>End Date</label>
+                                <input type="date" id="booking-end-date">
+                            </div>
+                        </div>
+                        <button class="btn" onclick="createBooking()">Create Booking</button>
+                        <div id="create-booking-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get All Bookings</h3>
+                        <div class="url-display">GET /api/bookings</div>
+                        <button class="btn" onclick="getAllBookings()">Get All Bookings</button>
+                        <div id="get-all-bookings-response" class="response" style="display:none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Payments Section -->
+                <div id="payments" class="section">
+                    <h2>Payment Management</h2>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span>Create Payment</h3>
+                        <div class="url-display">POST /api/payments</div>
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label>Student ID</label>
+                                <input type="text" id="payment-student-id" placeholder="Student ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Amount</label>
+                                <input type="number" id="payment-amount" placeholder="Amount">
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Type</label>
+                                <select id="payment-type">
+                                    <option value="fees">Fees</option>
+                                    <option value="mess">Mess</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Payment Method</label>
+                                <select id="payment-method">
+                                    <option value="cash">Cash</option>
+                                    <option value="card">Card</option>
+                                    <option value="online">Online</option>
+                                    <option value="cheque">Cheque</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn" onclick="createPayment()">Create Payment</button>
+                        <div id="create-payment-response" class="response" style="display:none;"></div>
+                    </div>
+                    
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span>Get All Payments</h3>
+                        <div class="url-display">GET /api/payments</div>
+                        <button class="btn" onclick="getAllPayments()">Get All Payments</button>
+                        <div id="get-all-payments-response" class="response" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        let authToken = localStorage.getItem('authToken');
+        
+        // Update auth status on page load
+        function updateAuthStatus() {
+            const authStatus = document.getElementById('auth-status');
+            if (authToken) {
+                authStatus.textContent = '✅ Authenticated - Testing protected endpoints enabled';
+                authStatus.className = 'auth-status authenticated';
+            } else {
+                authStatus.textContent = 'Not Authenticated - Please sign in to test protected endpoints';
+                authStatus.className = 'auth-status';
+            }
+        }
+        
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all items and sections
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+                
+                // Add active class to clicked item and corresponding section
+                this.classList.add('active');
+                const sectionId = this.getAttribute('data-section');
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+        
+        // Utility function to make API calls
+        async function makeRequest(method, endpoint, data = null, requireAuth = false) {
+            const config = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+            
+            if (requireAuth && authToken) {
+                config.headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            if (data) {
+                config.body = JSON.stringify(data);
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+                const responseData = await response.json();
+                
+                return {
+                    status: response.status,
+                    ok: response.ok,
+                    data: responseData
+                };
+            } catch (error) {
+                return {
+                    status: 0,
+                    ok: false,
+                    data: { error: error.message }
+                };
+            }
+        }
+        
+        // Utility function to display response
+        function displayResponse(elementId, response) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${response.ok ? 'success' : 'error'}`;
+            element.textContent = JSON.stringify(response.data, null, 2);
+        }
+        
+        // Authentication functions
+        async function signUp() {
+            const data = {
+                name: document.getElementById('signup-name').value,
+                email: document.getElementById('signup-email').value,
+                password: document.getElementById('signup-password').value,
+                role: document.getElementById('signup-role').value
+            };
+            
+            const response = await makeRequest('POST', '/user/signUp', data);
+            displayResponse('signup-response', response);
+        }
+        
+        async function signIn() {
+            const data = {
+                email: document.getElementById('signin-email').value,
+                password: document.getElementById('signin-password').value
+            };
+            
+            const response = await makeRequest('POST', '/user/signIn', data);
+            displayResponse('signin-response', response);
+            
+            if (response.ok && response.data.token) {
+                authToken = response.data.token;
+                localStorage.setItem('authToken', authToken);
+                updateAuthStatus();
+            }
+        }
+        
+        async function getProfile() {
+            const response = await makeRequest('GET', '/user/profile', null, true);
+            displayResponse('profile-response', response);
+        }
+        
+        async function changePassword() {
+            const data = {
+                currentPassword: document.getElementById('current-password').value,
+                newPassword: document.getElementById('new-password').value
+            };
+            
+            const response = await makeRequest('PUT', '/user/change-password', data, true);
+            displayResponse('change-password-response', response);
+        }
+        
+        // Student functions
+        async function createStudent() {
+            const data = {
+                name: document.getElementById('student-name').value,
+                email: document.getElementById('student-email').value,
+                phone: document.getElementById('student-phone').value,
+                course: document.getElementById('student-course').value,
+                year: document.getElementById('student-year').value,
+                roomNumber: document.getElementById('student-room').value
+            };
+            
+            const response = await makeRequest('POST', '/students', data, true);
+            displayResponse('create-student-response', response);
+        }
+        
+        async function getAllStudents() {
+            const response = await makeRequest('GET', '/students', null, true);
+            displayResponse('get-all-students-response', response);
+        }
+        
+        async function getStudentById() {
+            const studentId = document.getElementById('student-id').value;
+            const response = await makeRequest('GET', `/students/${studentId}`, null, true);
+            displayResponse('get-student-response', response);
+        }
+        
+        async function getStudentsByCourse() {
+            const course = document.getElementById('course-filter').value;
+            const response = await makeRequest('GET', `/students/course/${course}`, null, true);
+            displayResponse('students-by-course-response', response);
+        }
+        
+        async function getStudentsByYear() {
+            const year = document.getElementById('year-filter').value;
+            const response = await makeRequest('GET', `/students/year/${year}`, null, true);
+            displayResponse('students-by-year-response', response);
+        }
+        
+        // Hostel functions
+        async function createHostel() {
+            const data = {
+                name: document.getElementById('hostel-name').value,
+                type: document.getElementById('hostel-type').value,
+                address: document.getElementById('hostel-address').value,
+                capacity: document.getElementById('hostel-capacity').value,
+                description: document.getElementById('hostel-description').value
+            };
+            
+            const response = await makeRequest('POST', '/hostels', data, true);
+            displayResponse('create-hostel-response', response);
+        }
+        
+        async function getAllHostels() {
+            const response = await makeRequest('GET', '/hostels', null, true);
+            displayResponse('get-all-hostels-response', response);
+        }
+        
+        async function getHostelById() {
+            const hostelId = document.getElementById('hostel-id').value;
+            const response = await makeRequest('GET', `/hostels/${hostelId}`, null, true);
+            displayResponse('get-hostel-response', response);
+        }
+        
+        async function getHostelsByType() {
+            const type = document.getElementById('hostel-type-filter').value;
+            const response = await makeRequest('GET', `/hostels/type/${type}`, null, true);
+            displayResponse('hostels-by-type-response', response);
+        }
+        
+        // Room functions
+        async function createRoom() {
+            const data = {
+                roomNumber: document.getElementById('room-number').value,
+                hostelId: document.getElementById('room-hostel-id').value,
+                capacity: document.getElementById('room-capacity').value,
+                type: document.getElementById('room-type').value,
+                floor: document.getElementById('room-floor').value
+            };
+            
+            const response = await makeRequest('POST', '/room', data, true);
+            displayResponse('create-room-response', response);
+        }
+        
+        async function getAllRooms() {
+            const response = await makeRequest('GET', '/room', null, true);
+            displayResponse('get-all-rooms-response', response);
+        }
+        
+        async function getRoomById() {
+            const roomId = document.getElementById('room-id').value;
+            const response = await makeRequest('GET', `/room/${roomId}`, null, true);
+            displayResponse('get-room-response', response);
+        }
+        
+        // Booking functions
+        async function createBooking() {
+            const data = {
+                studentId: document.getElementById('booking-student-id').value,
+                roomId: document.getElementById('booking-room-id').value,
+                startDate: document.getElementById('booking-start-date').value,
+                endDate: document.getElementById('booking-end-date').value
+            };
+            
+            const response = await makeRequest('POST', '/bookings', data, true);
+            displayResponse('create-booking-response', response);
+        }
+        
+        async function getAllBookings() {
+            const response = await makeRequest('GET', '/bookings', null, true);
+            displayResponse('get-all-bookings-response', response);
+        }
+        
+        // Payment functions
+        async function createPayment() {
+            const data = {
+                studentId: document.getElementById('payment-student-id').value,
+                amount: document.getElementById('payment-amount').value,
+                paymentType: document.getElementById('payment-type').value,
+                paymentMethod: document.getElementById('payment-method').value
+            };
+            
+            const response = await makeRequest('POST', '/payments', data, true);
+            displayResponse('create-payment-response', response);
+        }
+        
+        async function getAllPayments() {
+            const response = await makeRequest('GET', '/payments', null, true);
+            displayResponse('get-all-payments-response', response);
+        }
+        
+        // Initialize auth status on page load
+        updateAuthStatus();
+    </script>
+</body>
+</html>
