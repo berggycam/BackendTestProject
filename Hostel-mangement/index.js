@@ -19,6 +19,15 @@ const feeRouter = require('./src/routes/feeRouter.js');
 const complaintRouter = require('./src/routes/complaintRouter.js');
 const visitorRouter = require('./src/routes/visitorRouter.js');
 
+// Additional missing routes for complete functionality
+const menuRouter = require('./src/routes/menuRouter.js');
+const messAttendanceRouter = require('./src/routes/messAttendanceRouter.js');
+const maintenanceRouter = require('./src/routes/maintenanceRouter.js');
+const studentAttendanceRouter = require('./src/routes/studentAttendanceRouter.js');
+const leaveRequestRouter = require('./src/routes/leaveRequestRouter.js');
+const gateEntryRouter = require('./src/routes/gateEntryRouter.js');
+const auditLogRouter = require('./src/routes/auditLogRouter.js');
+
 
 app.use(pool);
 app.use(cors());
@@ -49,6 +58,15 @@ app.use('/api/allocations', roomAllocationRouter);
 app.use('/api/fees', feeRouter);
 app.use('/api/complaints', complaintRouter);
 app.use('/api/visitors', visitorRouter);
+
+// Additional missing routes for complete functionality
+app.use('/api/menu', menuRouter);
+app.use('/api/mess-attendance', messAttendanceRouter);
+app.use('/api/maintenance', maintenanceRouter);
+app.use('/api/student-attendance', studentAttendanceRouter);
+app.use('/api/leave-requests', leaveRequestRouter);
+app.use('/api/gate-entry', gateEntryRouter);
+app.use('/api/audit-logs', auditLogRouter);
 
 // Start server
 app.listen(PORT, () => {
