@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const pool = require('../config/db.js');
+const db = require('../config/db.js');
 
 const authModel = {
     async signUp(userData) {
@@ -23,7 +23,7 @@ const authModel = {
             } = userData;
 
             // Check if user exists
-            const existingUser = await pool.query(
+            const existingUser = await db.query(
                 'SELECT user_id FROM users WHERE username = ? OR email = ?',
                 [username, email]
             );
@@ -36,7 +36,7 @@ const authModel = {
             const passwordHash = await bcrypt.hash(password, 10);
 
             // Create user
-            const userResult = await pool.query(
+            const userResult = await db.query(
                 'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?) RETURNING user_id, username, role, created_at',
                 [username, passwordHash, role]
             );
@@ -45,7 +45,7 @@ const authModel = {
 
             // If student, create student record
             if (role === 'student') {
-                await pool.query(
+                await db.query(
                     `INSERT INTO students (user_id, first_name, last_name, gender, date_of_birth, phone, email, address, course, year, guardian_name, guardian_phone)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [user.user_id, first_name, last_name, gender, date_of_birth, phone, email, address, course, year, guardian_name, guardian_phone]
@@ -63,7 +63,7 @@ const authModel = {
             const { username, password } = credentials;
 
             // Find user
-            const userResult = await pool.query(
+            const userResult = await db.query(
                 'SELECT user_id, username, password_hash, role, status FROM users WHERE username = ?',
                 [username]
             );
@@ -97,7 +97,7 @@ const authModel = {
             );
 
             // Update last login
-            await pool.query(
+            await db.query(
                 'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?',
                 [user.user_id]
             );
@@ -117,7 +117,7 @@ const authModel = {
 
     async getUserById(user_id) {
         try {
-            const result = await pool.query(
+            const result = await db.query(
                 'SELECT user_id, username, role, status, last_login FROM users WHERE user_id = ?',
                 [user_id]
             );
@@ -130,7 +130,7 @@ const authModel = {
     async changePassword(user_id, oldPassword, newPassword) {
         try {
             // Get current password hash
-            const result = await pool.query(
+            const result = await db.query(
                 'SELECT password_hash FROM users WHERE user_id = ?',
                 [user_id]
             );
@@ -149,7 +149,7 @@ const authModel = {
             const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
             // Update password
-            await pool.query(
+            await db.query(
                 'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
                 [newPasswordHash, user_id]
             );

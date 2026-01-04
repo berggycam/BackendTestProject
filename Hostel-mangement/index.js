@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
-const pool=require('./src/config/db.js');
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+
+const db = require('./src/config/db.js');
 const cors = require('cors');
 const Router=require('./src/routes/authRouter.js');
 const roomRouter=require("./src/routes/roomRouter.js");
@@ -29,7 +31,6 @@ const gateEntryRouter = require('./src/routes/gateEntryRouter.js');
 const auditLogRouter = require('./src/routes/auditLogRouter.js');
 
 
-app.use(pool);
 app.use(cors());
 
 const PORT = 3000;

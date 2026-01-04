@@ -1,25 +1,28 @@
 
+const extensionQuery = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+`;
+
 const userTable = `
 CREATE TABLE IF NOT EXISTS users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) 
-        CHECK (role IN ('superAdmin','admin','warden','staff','student'))
-        DEFAULT 'student',
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    last_login TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);`;
+    role VARCHAR(20) NOT NULL DEFAULT 'student' CHECK (role IN ('superAdmin','admin','warden','staff','student')),
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),
+    last_login TIMESTAMPTZ NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+`;
 
 const studentTable = `
 CREATE TABLE IF NOT EXISTS students (
-    student_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT UNIQUE,
+    student_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    gender ENUM('male', 'female', 'other') NOT NULL,
+    gender VARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female', 'other')),
     date_of_birth DATE NOT NULL,
     phone VARCHAR(20) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -28,255 +31,274 @@ CREATE TABLE IF NOT EXISTS students (
     year INT NOT NULL CHECK (year BETWEEN 1 AND 6),
     guardian_name VARCHAR(100) NOT NULL,
     guardian_phone VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_students_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+`;
 
 const hostelTable = `
 CREATE TABLE IF NOT EXISTS hostels (
-    hostel_id INT AUTO_INCREMENT PRIMARY KEY,
+    hostel_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     hostel_name VARCHAR(100) NOT NULL UNIQUE,
-    hostel_type ENUM('boys', 'girls', 'co-ed') NOT NULL,
+    hostel_type VARCHAR(10) NOT NULL CHECK (hostel_type IN ('boys', 'girls', 'co-ed')),
     address TEXT NOT NULL,
     warden_name VARCHAR(100) NOT NULL,
     warden_contact VARCHAR(20) NOT NULL,
-    total_rooms INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);`;
+    total_rooms INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+`;
 
 const roomTable = `
 CREATE TABLE IF NOT EXISTS rooms (
-    room_id INT AUTO_INCREMENT PRIMARY KEY,
-    hostel_id INT NOT NULL,
+    room_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    hostel_id UUID NOT NULL,
     room_number VARCHAR(20) NOT NULL,
-    room_type ENUM('single', 'double', 'triple') NOT NULL,
+    room_type VARCHAR(10) NOT NULL CHECK (room_type IN ('single', 'double', 'triple')),
     capacity INT NOT NULL,
-    rent DECIMAL(10,2) NOT NULL,
-    status ENUM('available', 'full', 'maintenance') DEFAULT 'available',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (hostel_id) REFERENCES hostels(hostel_id),
-    UNIQUE KEY (hostel_id, room_number)
-);`;
+    rent NUMERIC(10,2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'full', 'maintenance')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_rooms_hostel FOREIGN KEY (hostel_id) REFERENCES hostels(hostel_id) ON DELETE CASCADE,
+    CONSTRAINT uq_rooms_hostel_number UNIQUE (hostel_id, room_number)
+);
+`;
 
 const bedTable = `
 CREATE TABLE IF NOT EXISTS beds (
-    bed_id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NOT NULL,
+    bed_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL,
     bed_number VARCHAR(10) NOT NULL,
-    status ENUM('available', 'occupied') DEFAULT 'available',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (room_id) REFERENCES rooms(room_id),
-    UNIQUE KEY (room_id, bed_number)
-);`;
+    status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'occupied')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_beds_room FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE,
+    CONSTRAINT uq_beds_room_number UNIQUE (room_id, bed_number)
+);
+`;
 
 const roomAllocationTable = `
 CREATE TABLE IF NOT EXISTS room_allocation (
-    allocation_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
-    room_id INT NOT NULL,
-    bed_id INT NOT NULL,
+    allocation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
+    room_id UUID NOT NULL,
+    bed_id UUID NOT NULL,
     allocation_date DATE NOT NULL,
     vacate_date DATE NULL,
-    status ENUM('active', 'vacated') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id),
-    FOREIGN KEY (room_id) REFERENCES rooms(room_id),
-    FOREIGN KEY (bed_id) REFERENCES beds(bed_id),
-    UNIQUE KEY (student_id, status)
-);`;
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'vacated')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_allocation_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    CONSTRAINT fk_allocation_room FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE,
+    CONSTRAINT fk_allocation_bed FOREIGN KEY (bed_id) REFERENCES beds(bed_id) ON DELETE CASCADE,
+    CONSTRAINT uq_allocation_student_active UNIQUE (student_id, status)
+);
+`;
 
 const feeTable = `
 CREATE TABLE IF NOT EXISTS fees (
-    fee_id INT AUTO_INCREMENT PRIMARY KEY,
-    fee_type ENUM('hostel_rent', 'mess', 'security', 'other') NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    frequency ENUM('monthly', 'semester', 'annual', 'one-time') NOT NULL,
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);`;
+    fee_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    fee_type VARCHAR(20) NOT NULL CHECK (fee_type IN ('hostel_rent', 'mess', 'security', 'other')),
+    amount NUMERIC(10,2) NOT NULL,
+    frequency VARCHAR(20) NOT NULL CHECK (frequency IN ('monthly', 'semester', 'annual', 'one-time')),
+    description TEXT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+`;
 
 const paymentTable = `
 CREATE TABLE IF NOT EXISTS payments (
-    payment_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
-    fee_id INT NOT NULL,
-    amount_paid DECIMAL(10,2) NOT NULL,
+    payment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
+    fee_id UUID NOT NULL,
+    amount_paid NUMERIC(10,2) NOT NULL,
     payment_date DATE NOT NULL,
-    payment_mode ENUM('cash', 'online', 'bank_transfer', 'cheque') NOT NULL,
+    payment_mode VARCHAR(20) NOT NULL CHECK (payment_mode IN ('cash', 'online', 'bank_transfer', 'cheque')),
     transaction_id VARCHAR(100) NULL,
-    status ENUM('paid', 'pending', 'failed') DEFAULT 'paid',
+    status VARCHAR(20) NOT NULL DEFAULT 'paid' CHECK (status IN ('paid', 'pending', 'failed')),
     remarks TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id),
-    FOREIGN KEY (fee_id) REFERENCES fees(fee_id)
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_payments_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    CONSTRAINT fk_payments_fee FOREIGN KEY (fee_id) REFERENCES fees(fee_id) ON DELETE CASCADE
+);
+`;
 
 const messTable = `
 CREATE TABLE IF NOT EXISTS mess (
-    mess_id INT AUTO_INCREMENT PRIMARY KEY,
-    hostel_id INT NOT NULL,
+    mess_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    hostel_id UUID NOT NULL,
     mess_name VARCHAR(100) NOT NULL,
-    mess_type ENUM('veg', 'non-veg', 'both') DEFAULT 'both',
-    monthly_fee DECIMAL(10,2) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (hostel_id) REFERENCES hostels(hostel_id)
-);`;
+    mess_type VARCHAR(10) NOT NULL DEFAULT 'both' CHECK (mess_type IN ('veg', 'non-veg', 'both')),
+    monthly_fee NUMERIC(10,2) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_mess_hostel FOREIGN KEY (hostel_id) REFERENCES hostels(hostel_id) ON DELETE CASCADE
+);
+`;
 
 const menuTable = `
 CREATE TABLE IF NOT EXISTS menu (
-    menu_id INT AUTO_INCREMENT PRIMARY KEY,
-    mess_id INT NOT NULL,
-    day ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday') NOT NULL,
+    menu_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    mess_id UUID NOT NULL,
+    day VARCHAR(10) NOT NULL CHECK (day IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')),
     breakfast TEXT NULL,
     lunch TEXT NULL,
     dinner TEXT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (mess_id) REFERENCES mess(mess_id),
-    UNIQUE KEY (mess_id, day)
-);`;
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_menu_mess FOREIGN KEY (mess_id) REFERENCES mess(mess_id) ON DELETE CASCADE,
+    CONSTRAINT uq_menu_mess_day UNIQUE (mess_id, day)
+);
+`;
 
 const messAttendanceTable = `
 CREATE TABLE IF NOT EXISTS mess_attendance (
-    attendance_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
+    attendance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
     date DATE NOT NULL,
-    meal_type ENUM('breakfast', 'lunch', 'dinner') NOT NULL,
-    status ENUM('present', 'absent') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id),
-    UNIQUE KEY (student_id, date, meal_type)
-);`;
+    meal_type VARCHAR(20) NOT NULL CHECK (meal_type IN ('breakfast', 'lunch', 'dinner')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_mess_attendance_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    CONSTRAINT uq_mess_attendance UNIQUE (student_id, date, meal_type)
+);
+`;
 
 const complaintTable = `
 CREATE TABLE IF NOT EXISTS complaints (
-    complaint_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
-    complaint_type ENUM('electricity', 'water', 'cleaning', 'furniture', 'internet', 'other') NOT NULL,
+    complaint_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
+    complaint_type VARCHAR(20) NOT NULL CHECK (complaint_type IN ('electricity', 'water', 'cleaning', 'furniture', 'internet', 'other')),
     description TEXT NOT NULL,
-    status ENUM('open', 'in-progress', 'resolved') DEFAULT 'open',
-    priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
-    resolved_by INT NULL,
-    resolved_at TIMESTAMP NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in-progress', 'resolved')),
+    priority VARCHAR(10) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+    resolved_by UUID NULL,
+    resolved_at TIMESTAMPTZ NULL,
     resolution_remarks TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id),
-    FOREIGN KEY (resolved_by) REFERENCES users(user_id) ON DELETE SET NULL
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_complaint_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    CONSTRAINT fk_complaint_resolver FOREIGN KEY (resolved_by) REFERENCES users(user_id) ON DELETE SET NULL
+);
+`;
 
 const maintenanceTable = `
 CREATE TABLE IF NOT EXISTS maintenance (
-    maintenance_id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NOT NULL,
+    maintenance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL,
     issue VARCHAR(200) NOT NULL,
     description TEXT NULL,
     reported_date DATE NOT NULL,
     resolved_date DATE NULL,
-    status ENUM('pending', 'in-progress', 'completed') DEFAULT 'pending',
-    assigned_to INT NULL,
-    cost DECIMAL(10,2) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (room_id) REFERENCES rooms(room_id),
-    FOREIGN KEY (assigned_to) REFERENCES users(user_id) ON DELETE SET NULL
-);`;
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in-progress', 'completed')),
+    assigned_to UUID NULL,
+    cost NUMERIC(10,2) NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_maintenance_room FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE,
+    CONSTRAINT fk_maintenance_assignee FOREIGN KEY (assigned_to) REFERENCES users(user_id) ON DELETE SET NULL
+);
+`;
 
 const visitorTable = `
 CREATE TABLE IF NOT EXISTS visitors (
-    visitor_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
+    visitor_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
     visitor_name VARCHAR(100) NOT NULL,
     relation VARCHAR(50) NOT NULL,
     visit_date DATE NOT NULL,
     in_time TIME NOT NULL,
     out_time TIME NULL,
     purpose VARCHAR(200) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id)
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_visitor_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+);
+`;
 
 const studentAttendanceTable = `
 CREATE TABLE IF NOT EXISTS student_attendance (
-    attendance_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
+    attendance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
     date DATE NOT NULL,
-    status ENUM('present', 'absent', 'leave') NOT NULL,
-    marked_by INT NOT NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent', 'leave')),
+    marked_by UUID NOT NULL,
     remarks TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id),
-    FOREIGN KEY (marked_by) REFERENCES users(user_id),
-    UNIQUE KEY (student_id, date)
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_student_attendance_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    CONSTRAINT fk_student_attendance_marker FOREIGN KEY (marked_by) REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT uq_student_attendance UNIQUE (student_id, date)
+);
+`;
 
 const leaveRequestTable = `
 CREATE TABLE IF NOT EXISTS leave_requests (
-    leave_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
+    leave_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
     from_date DATE NOT NULL,
     to_date DATE NOT NULL,
     reason TEXT NOT NULL,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    approved_by INT NULL,
-    approved_at TIMESTAMP NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    approved_by UUID NULL,
+    approved_at TIMESTAMPTZ NULL,
     rejection_reason TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id),
-    FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_leave_request_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    CONSTRAINT fk_leave_request_approver FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL
+);
+`;
 
 const gateEntryTable = `
 CREATE TABLE IF NOT EXISTS gate_entry (
-    entry_id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
+    entry_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID NOT NULL,
     date DATE NOT NULL,
     in_time TIME NULL,
     out_time TIME NULL,
     purpose VARCHAR(200) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(student_id)
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_gate_entry_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+);
+`;
 
 const auditLogTable = `
 CREATE TABLE IF NOT EXISTS audit_logs (
-    log_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
     action VARCHAR(100) NOT NULL,
     table_name VARCHAR(50) NULL,
-    record_id INT NULL,
-    old_values JSON NULL,
-    new_values JSON NULL,
+    record_id UUID NULL,
+    old_values JSONB NULL,
+    new_values JSONB NULL,
     ip_address VARCHAR(45) NULL,
     user_agent TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_audit_logs_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+`;
 
 const guestTable = `
 CREATE TABLE IF NOT EXISTS guests (
-    guest_id INT AUTO_INCREMENT PRIMARY KEY,
+    guest_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(20),
     purpose VARCHAR(200) NULL,
     visit_date DATE NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);`;
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+`;
 
 module.exports = {
+    extensionQuery,
     userTable,
     studentTable,
     hostelTable,

@@ -1,8 +1,9 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
-const pool = require('../src/config/db.js');
-const { 
-    userTable, 
+const db = require('../src/config/db.js');
+const {
+    extensionQuery,
+    userTable,
     studentTable,
     hostelTable,
     roomTable,
@@ -20,68 +21,71 @@ const {
     leaveRequestTable,
     gateEntryTable,
     auditLogTable,
-    guestTable 
+    guestTable
 } = require('../src/config/schema.sql');
 
 async function createTables() {
     try {
         console.log('Creating comprehensive hostel management database tables...');
+
+        await db.query(extensionQuery);
+        console.log('✓ pgcrypto extension ensured');
         
-        await pool.query(userTable);
+        await db.query(userTable);
         console.log('✓ Users table created successfully');
 
-        await pool.query(studentTable);
+        await db.query(studentTable);
         console.log('✓ Students table created successfully');
 
-        await pool.query(hostelTable);
+        await db.query(hostelTable);
         console.log('✓ Hostels table created successfully');
 
-        await pool.query(roomTable);
+        await db.query(roomTable);
         console.log('✓ Rooms table created successfully');
 
-        await pool.query(bedTable);
+        await db.query(bedTable);
         console.log('✓ Beds table created successfully');
 
-        await pool.query(roomAllocationTable);
+        await db.query(roomAllocationTable);
         console.log('✓ Room allocation table created successfully');
 
-        await pool.query(feeTable);
+        await db.query(feeTable);
         console.log('✓ Fees table created successfully');
 
-        await pool.query(paymentTable);
+        await db.query(paymentTable);
         console.log('✓ Payments table created successfully');
 
-        await pool.query(messTable);
+        await db.query(messTable);
         console.log('✓ Mess table created successfully');
 
-        await pool.query(menuTable);
+        await db.query(menuTable);
         console.log('✓ Menu table created successfully');
 
-        await pool.query(messAttendanceTable);
+        await db.query(messAttendanceTable);
         console.log('✓ Mess attendance table created successfully');
 
-        await pool.query(complaintTable);
+        await db.query(complaintTable);
         console.log('✓ Complaints table created successfully');
 
-        await pool.query(maintenanceTable);
+        await db.query(maintenanceTable);
         console.log('✓ Maintenance table created successfully');
 
-        await pool.query(visitorTable);
+        await db.query(visitorTable);
         console.log('✓ Visitors table created successfully');
 
-        await pool.query(studentAttendanceTable);
+        await db.query(studentAttendanceTable);
         console.log('✓ Student attendance table created successfully');
 
-        await pool.query(leaveRequestTable);
+        await db.query(leaveRequestTable);
         console.log('✓ Leave requests table created successfully');
 
-        await pool.query(gateEntryTable);
+        await db.query(gateEntryTable);
         console.log('✓ Gate entry table created successfully');
 
-        await pool.query(auditLogTable);
+        await db.query(auditLogTable);
         console.log('✓ Audit logs table created successfully');
 
-        await pool.query(guestTable);
+        await db.query(guestTable);
         console.log('✓ Guest table created successfully');
 
         console.log('\n🎉 All hostel management tables created successfully!');
@@ -89,11 +93,25 @@ async function createTables() {
         
     } catch (err) {
         console.error('❌ Error creating tables:', err.message);
-    } finally {
-        await pool.end(); // close the connection
+        throw err;
     }
 }
 
 module.exports = {
     createTables
 };
+
+if (require.main === module) {
+    createTables()
+        .then(() => {
+            console.log('\n✅ Table creation completed successfully.');
+        })
+        .catch((error) => {
+            console.error('\n❌ Table creation failed:', error.message);
+        })
+        .finally(() => {
+            db.end().catch((endErr) => {
+                console.error('Error closing database pool:', endErr.message);
+            });
+        });
+}
