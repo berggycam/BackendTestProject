@@ -7,6 +7,7 @@ const userTable = `
 CREATE TABLE IF NOT EXISTS users (
     user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'student' CHECK (role IN ('superAdmin','admin','warden','staff','student')),
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),

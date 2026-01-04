@@ -34,6 +34,17 @@ async function createTables() {
         await db.query(userTable);
         console.log('✓ Users table created successfully');
 
+        await db.query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS email VARCHAR(100) UNIQUE
+        `);
+        console.log('  ↳ Email column ensured on users table');
+
+        await db.query(`
+            CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+        `);
+        console.log('  ↳ Email index ensured on users table');
+
         await db.query(studentTable);
         console.log('✓ Students table created successfully');
 

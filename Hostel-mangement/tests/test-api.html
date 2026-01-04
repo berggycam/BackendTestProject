@@ -296,6 +296,10 @@
                         <h3><span class="method-badge method-post">POST</span>Sign Up</h3>
                         <div class="url-display">POST /api/user/signUp</div>
                         <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="signup-username" placeholder="Enter your username">
+                        </div>
+                        <div class="form-group">
                             <label>Name</label>
                             <input type="text" id="signup-name" placeholder="Enter your name">
                         </div>
@@ -326,10 +330,6 @@
                         <div class="form-group">
                             <label>Username</label>
                             <input type="text" id="signin-username" placeholder="Enter your username">
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="signin-email" placeholder="Enter your email">
                         </div>
                         <div class="form-group">
                             <label>Password</label>
@@ -736,6 +736,7 @@
         // Authentication functions
         async function signUp() {
             const data = {
+                username: document.getElementById('signup-username').value,
                 name: document.getElementById('signup-name').value,
                 email: document.getElementById('signup-email').value,
                 password: document.getElementById('signup-password').value,
@@ -749,7 +750,6 @@
         async function signIn() {
             const data = {
                 username: document.getElementById('signin-username').value,
-                email: document.getElementById('signin-email').value,
                 password: document.getElementById('signin-password').value
             };
             

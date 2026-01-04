@@ -37,19 +37,52 @@ const authModel = {
 
             // Create user
             const userResult = await db.query(
-                'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?) RETURNING user_id, username, role, created_at',
-                [username, passwordHash, role]
+                'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?) RETURNING user_id, username, email, role, created_at',
+                [username, email, passwordHash, role]
             );
 
             const user = userResult.rows[0];
 
             // If student, create student record
             if (role === 'student') {
-                await db.query(
-                    `INSERT INTO students (user_id, first_name, last_name, gender, date_of_birth, phone, email, address, course, year, guardian_name, guardian_phone)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [user.user_id, first_name, last_name, gender, date_of_birth, phone, email, address, course, year, guardian_name, guardian_phone]
-                );
+                const requiredStudentFields = [
+                    first_name,
+                    last_name,
+                    gender,
+                    date_of_birth,
+                    phone,
+                    address,
+                    course,
+                    year,
+                    guardian_name,
+                    guardian_phone
+                ];
+
+                const hasAllStudentDetails = requiredStudentFields.every((field) => field !== undefined && field !== null);
+
+                if (hasAllStudentDetails) {
+                    await db.query(
+                        `INSERT INTO students (user_id, first_name, last_name, gender, date_of_birth, phone, email, address, course, year, guardian_name, guardian_phone)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            user.user_id,
+                            first_name,
+                            last_name,
+                            gender,
+                            date_of_birth,
+                            phone,
+                            email,
+                            address,
+                            course,
+                            year,
+                            guardian_name,
+                            guardian_phone
+                        ]
+                    );
+                    user.studentProfileCreated = true;
+                } else {
+                    user.studentProfileCreated = false;
+                }
             }
 
             return user;
