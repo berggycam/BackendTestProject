@@ -324,6 +324,10 @@
                         <h3><span class="method-badge method-post">POST</span>Sign In</h3>
                         <div class="url-display">POST /api/user/signIn</div>
                         <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="signin-username" placeholder="Enter your username">
+                        </div>
+                        <div class="form-group">
                             <label>Email</label>
                             <input type="email" id="signin-email" placeholder="Enter your email">
                         </div>
@@ -744,6 +748,7 @@
         
         async function signIn() {
             const data = {
+                username: document.getElementById('signin-username').value,
                 email: document.getElementById('signin-email').value,
                 password: document.getElementById('signin-password').value
             };
